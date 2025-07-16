@@ -1,8 +1,9 @@
-import React from 'react';
-import { auth, firestore, googleProvider, signInWithPopup } from '../firebase';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { auth, googleProvider, signInWithPopup } from '../firebase';  // Importing from firebase.js
+import { useNavigate } from 'react-router-dom';  // For redirection after login
 
 const Login = () => {
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -10,14 +11,14 @@ const Login = () => {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
-      await firestore.collection('teams').doc(user.uid).set({
-        teamName: user.displayName,
-        email: user.email,
-      });
-
-      navigate('/team-dashboard');
-    } catch (error) {
-      console.error('Login failed: ', error.message);
+      // Redirect user based on role (Admin or Team)
+      if (user.email === "admin@example.com") {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/team-dashboard');
+      }
+    } catch (err) {
+      setError('Login failed: ' + err.message);
     }
   };
 
@@ -25,6 +26,7 @@ const Login = () => {
     <div>
       <h2>Login</h2>
       <button onClick={handleLogin}>Login with Google</button>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );
 };

@@ -1,5 +1,6 @@
+// src/components/ChallengePage.js
 import React, { useState } from 'react';
-import { firestore } from '../firebase';
+import { getFirestore, doc, collection, addDoc, updateDoc } from 'firebase/firestore';  // Firestore modular imports
 
 const ChallengePage = ({ challengeId, user }) => {
   const [code, setCode] = useState('');
@@ -12,21 +13,24 @@ const ChallengePage = ({ challengeId, user }) => {
 
   const handleSubmit = async () => {
     try {
-      // Placeholder: Implement logic for code validation (use services like Judge0)
-      const flag = "12345"; // Example flag for algorithmic solution
-      const challengeRef = firestore.collection('challenges').doc(challengeId);
+      const db = getFirestore();  // Get Firestore instance
+      const challengeRef = doc(db, 'challenges', challengeId);  // Reference to the challenge document
 
-      // Submit the flag to Firestore
-      await challengeRef.collection('submissions').add({
+      // Placeholder for the logic to validate the code (Judge0 or other API)
+      const flag = "12345";  // Example flag for algorithmic solution
+
+      // Submit the solution to Firestore
+      const submissionsRef = collection(challengeRef, 'submissions');
+      await addDoc(submissionsRef, {
         userId: user.uid,
         solution: code,
         timestamp: new Date(),
       });
 
+      // Validate the flag
       if (code === flag) {
-        // Unlock the buildathon task if the flag is correct
-        await challengeRef.update({
-          buildathonUnlocked: true,
+        await updateDoc(challengeRef, {
+          buildathonUnlocked: true,  // Unlock the Buildathon task
         });
         setOutput('Challenge solved! Buildathon task unlocked.');
       } else {

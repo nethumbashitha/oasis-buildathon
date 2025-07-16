@@ -1,24 +1,27 @@
+// src/components/AdminDashboard.js
 import React, { useState, useEffect } from 'react';
-import { firestore } from '../firebase';
+import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore';  // Modular Firestore imports
 
 const AdminDashboard = () => {
   const [challenges, setChallenges] = useState([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
-  const [buildathonUnlocked, setBuildathonUnlocked] = useState(false);
 
   useEffect(() => {
     const fetchChallenges = async () => {
       try {
-        const snapshot = await firestore.collection('challenges').get();
+        const db = getFirestore();  // Get Firestore instance
+        const challengesCollection = collection(db, 'challenges');  // Get collection reference
+        const snapshot = await getDocs(challengesCollection);  // Fetch documents from the collection
         const challengesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setChallenges(challengesData);
+        setChallenges(challengesData);  // Update state with fetched challenges
       } catch (err) {
         setError('Failed to load challenges: ' + err.message);
       }
     };
-    fetchChallenges();
+
+    fetchChallenges();  // Fetch challenges when the component mounts
   }, []);
 
   const handleCreateChallenge = async () => {
@@ -26,16 +29,14 @@ const AdminDashboard = () => {
       const newChallenge = {
         title,
         description,
-        buildathonUnlocked,
+        buildathonUnlocked: false,
       };
-      await firestore.collection('challenges').add(newChallenge);
+
+      const db = getFirestore();  // Get Firestore instance
+      await addDoc(collection(db, 'challenges'), newChallenge);  // Add new challenge to Firestore
+      setChallenges([...challenges, newChallenge]);  // Update the challenges list in the state
       setTitle('');
       setDescription('');
-      setBuildathonUnlocked(false);
-      // Refetch challenges after adding the new one
-      const snapshot = await firestore.collection('challenges').get();
-      const challengesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setChallenges(challengesData);
     } catch (err) {
       setError('Failed to create challenge: ' + err.message);
     }
@@ -56,16 +57,7 @@ const AdminDashboard = () => {
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
-      <label>
-        Unlock Buildathon Task:
-        <input
-          type="checkbox"
-          checked={buildathonUnlocked}
-          onChange={() => setBuildathonUnlocked(!buildathonUnlocked)}
-        />
-      </label>
       <button onClick={handleCreateChallenge}>Create Challenge</button>
-
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <h3>Challenges</h3>
@@ -74,7 +66,6 @@ const AdminDashboard = () => {
           <li key={challenge.id}>
             <h4>{challenge.title}</h4>
             <p>{challenge.description}</p>
-            <button>Delete</button>
           </li>
         ))}
       </ul>

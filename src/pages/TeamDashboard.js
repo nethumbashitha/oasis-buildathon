@@ -1,26 +1,32 @@
+// src/components/TeamDashboard.js
 import React, { useState, useEffect } from 'react';
-import { firestore } from '../firebase';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';  // Firestore modular imports
 
-const TeamDashboard = ({ user }) => {
+const TeamDashboard = () => {
   const [challenges, setChallenges] = useState([]);
 
   useEffect(() => {
     const fetchChallenges = async () => {
-      const snapshot = await firestore.collection('challenges').get();
-      const challengesData = snapshot.docs.map(doc => doc.data());
-      setChallenges(challengesData);
+      try {
+        const db = getFirestore();  // Get Firestore instance
+        const challengesCollection = collection(db, 'challenges');  // Reference the challenges collection
+        const snapshot = await getDocs(challengesCollection);  // Fetch challenges
+        const challengesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setChallenges(challengesData);  // Update state with the challenges data
+      } catch (error) {
+        console.error('Error fetching challenges: ', error);
+      }
     };
 
-    fetchChallenges();
-  }, []);
+    fetchChallenges();  // Fetch challenges when component mounts
+  }, []);  // Empty dependency array to run once
 
   return (
     <div>
-      <h2>Welcome, {user.displayName}</h2>
-      <h3>Your Challenges</h3>
+      <h2>Your Challenges</h2>
       <ul>
-        {challenges.map((challenge, index) => (
-          <li key={index}>
+        {challenges.map((challenge) => (
+          <li key={challenge.id}>
             <h4>{challenge.title}</h4>
             <p>{challenge.description}</p>
           </li>
